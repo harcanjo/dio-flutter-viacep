@@ -15,8 +15,6 @@ Future<Map<String, dynamic>> consultarCep(String cep) async {
 }
 
 void main() async {
-  // Certifique-se de chamar o método `WidgetsFlutterBinding.ensureInitialized`
-  // antes de usar qualquer código assíncrono no método `main`
   WidgetsFlutterBinding.ensureInitialized();
 
   final repository = CEPSBack4AppRepository();
@@ -64,19 +62,24 @@ class _MyHomePageState extends State<MyHomePage> {
         key: _formKey,
         child: Column(
           children: <Widget>[
-            TextFormField(
-              controller: _cepController,
-              decoration: const InputDecoration(labelText: 'CEP'),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor, insira o CEP';
-                }
-                if (!RegExp(r'^[0-9]{5}-[0-9]{3}$').hasMatch(value)) {
-                  return 'Por favor, insira um CEP válido';
-                }
-                return null;
-              },
+            Center(
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.8,
+                child: TextFormField(
+                  controller: _cepController,
+                  decoration: const InputDecoration(labelText: 'CEP'),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, insira o CEP';
+                    }
+                    if (!RegExp(r'^[0-9]{5}-[0-9]{3}$').hasMatch(value)) {
+                      return 'Por favor, insira um CEP válido';
+                    }
+                    return null;
+                  },
+                ),
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -84,22 +87,27 @@ class _MyHomePageState extends State<MyHomePage> {
                   try {
                     final endereco = await consultarCep(_cepController.text);
                     if (endereco['localidade'] == null) {
-                      // Trate o erro aqui
-                      // Exemplo: exibir uma mensagem de erro
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('CEP não encontrado')),
                       );
                     } else {
-                      // Use os dados do endereço aqui
-                      // Exemplo: exibir o nome da cidade
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text('Cidade: ${endereco['localidade']}')),
-                      );
+                      final repository = CEPSBack4AppRepository();
+                      final cepExists =
+                          await repository.cepExists(_cepController.text);
+                      if (!cepExists) {
+                        await repository.registerCep(_cepController.text);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('CEP registrado com sucesso')),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content:
+                                  Text('Cidade: ${endereco['localidade']}')),
+                        );
+                      }
                     }
                   } catch (e) {
-                    // Trate o erro aqui
-                    // Exemplo: exibir uma mensagem de erro
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('CEP não encontrado')),
                     );
