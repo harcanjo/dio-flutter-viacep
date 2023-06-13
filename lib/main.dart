@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'back4app/ceps_back4app_repository.dart';
+
 Future<Map<String, dynamic>> consultarCep(String cep) async {
   final response =
       await http.get(Uri.parse('https://viacep.com.br/ws/$cep/json/'));
@@ -12,7 +14,20 @@ Future<Map<String, dynamic>> consultarCep(String cep) async {
   }
 }
 
-void main() => runApp(const MyApp());
+void main() async {
+  // Certifique-se de chamar o método `WidgetsFlutterBinding.ensureInitialized`
+  // antes de usar qualquer código assíncrono no método `main`
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final repository = CEPSBack4AppRepository();
+  final ceps = await repository.getCPFs();
+
+  for (final cep in ceps.results) {
+    print(cep.cep);
+  }
+
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

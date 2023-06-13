@@ -6,7 +6,7 @@ Criar uma aplicação Flutter do Zero aplicando na prática os conceitos de Assi
 
 - [x] Criar uma aplicação Flutter​
 
-- [ ] Criar uma classe de CEP no Back4App​
+- [x] Criar uma classe de CEP no Back4App​
 
 - [ ] Consulte um Cep no ViaCep, após retornado se não existir no Back4App, realizar o cadastro​
 
