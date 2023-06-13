@@ -4,7 +4,7 @@ Criar uma aplicação Flutter do Zero aplicando na prática os conceitos de Assi
 
 ### Checklist do Desafio
 
-- [ ] Criar uma aplicação Flutter​
+- [x] Criar uma aplicação Flutter​
 
 - [ ] Criar uma classe de CEP no Back4App​
 
