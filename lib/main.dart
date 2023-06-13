@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'back4app/ceps_back4app_repository.dart';
+import 'model/ceps_back4app_model.dart';
 
 Future<Map<String, dynamic>> consultarCep(String cep) async {
   final response =
@@ -51,6 +52,21 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final _formKey = GlobalKey<FormState>();
   final _cepController = TextEditingController();
+  CEPSBack4AppModel? ceps;
+  String buttonText = 'Consultar'; // Add this line
+  String? objectId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCEPs();
+  }
+
+  Future<void> _loadCEPs() async {
+    final repository = CEPSBack4AppRepository();
+    ceps = await repository.getCPFs();
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,28 +100,60 @@ class _MyHomePageState extends State<MyHomePage> {
             ElevatedButton(
               onPressed: () async {
                 if (_formKey.currentState?.validate() == true) {
+                  if (buttonText == 'Consultar') {
+                    try {
+                      final endereco = await consultarCep(_cepController.text);
+                      if (endereco['localidade'] == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('CEP não encontrado')),
+                        );
+                      } else {
+                        final repository = CEPSBack4AppRepository();
+                        final cepExists =
+                            await repository.cepExists(_cepController.text);
+                        if (!cepExists) {
+                          await repository.registerCep(_cepController.text);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text('CEP registrado com sucesso')),
+                          );
+                          await _loadCEPs();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content:
+                                    Text('Cidade: ${endereco['localidade']}')),
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('CEP não encontrado')),
+                      );
+                    }
+                    _cepController.clear();
+                  }
+                } else {
                   try {
                     final endereco = await consultarCep(_cepController.text);
+                    print(endereco); // Debug do corrigir
                     if (endereco['localidade'] == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('CEP não encontrado')),
                       );
                     } else {
                       final repository = CEPSBack4AppRepository();
-                      final cepExists =
-                          await repository.cepExists(_cepController.text);
-                      if (!cepExists) {
-                        await repository.registerCep(_cepController.text);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('CEP registrado com sucesso')),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content:
-                                  Text('Cidade: ${endereco['localidade']}')),
-                        );
-                      }
+                      await repository.updateCPF(
+                        objectId!, // Replace with the actual objectId
+                        {'cep': _cepController.text},
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('CEP corrigido')),
+                      );
+                      await _loadCEPs();
+                      setState(() {
+                        buttonText = 'Consultar';
+                      });
                     }
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -114,7 +162,57 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 }
               },
-              child: Text('Consultar'),
+              child: Text(buttonText),
+            ),
+            if (ceps != null)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  "CEP's Consultados:",
+                  style: Theme.of(context).textTheme.headline6,
+                ),
+              ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: ceps!.results.length,
+                itemBuilder: (context, index) {
+                  final cep = ceps!.results[ceps!.results.length - index - 1];
+                  return Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit),
+                          onPressed: () {
+                            setState(() {
+                              _cepController.text = cep.cep;
+                              buttonText = 'Corrigir';
+                              objectId = cep.objectId;
+                            });
+                          },
+                        ),
+                        SizedBox(width: 16),
+                        Text(cep.cep),
+                        SizedBox(width: 16),
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () async {
+                            final id = objectId; // Add this line
+                            if (id != null) {
+                              // Call the deleteCPF method on the repository instance
+                              final repository = CEPSBack4AppRepository();
+                              await repository
+                                  .deleteCPF(id); // Update this line
+                              // Reload the list of CEPs
+                              await _loadCEPs();
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ],
         ),
